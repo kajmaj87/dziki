@@ -2,10 +2,11 @@
 import spacy
 import json
 import glob
-from tqdm import tqdm
 from rich.console import Console
 from rich.progress import track
+from rich.traceback import install
 
+install(show_locals=True)
 console = Console()
 
 TEXT_MIN_LENGHT = 10
@@ -14,13 +15,15 @@ TEXT_MIN_LENGHT = 10
 with console.status("[bold green]Loading nlp model...") as status:
     nlp = spacy.load("pl_core_news_md")
 
+console.log(nlp.Defaults.stop_words)
+
 data = []
-for f in glob.glob("data/*.json"):
+for f in glob.glob("data/*0.json"):
     with open(f, "r", encoding="utf8") as json_file:
         data.extend(json.load(json_file)["results"])
 
-# docs = [nlp("To jest jakieś zdanie"), nlp("Zadanie domowe nr 1"), nlp("Mieszkanie w jakiejś dzielnicy")]
 docs = []
+withText, withComment, withTextAndComment = 0, 0, 0
 for d in data:
     if len(d["comment"]) > TEXT_MIN_LENGHT or len(d["text"]) > TEXT_MIN_LENGHT:
         docs.append(
@@ -34,25 +37,24 @@ for d in data:
                 "verdict": d["current_verdict"],
             }
         )
+    withText += 1 if len(d["text"]) > TEXT_MIN_LENGHT else 0
+    withComment += 1 if len(d["comment"]) > TEXT_MIN_LENGHT else 0
+    withTextAndComment += 1 if len(d["comment"]) > TEXT_MIN_LENGHT and len(d["text"]) > TEXT_MIN_LENGHT else 0
 
 
 similarities = []
 for i, dx in track(enumerate(docs), "Processing", len(docs)):
-    # nlp = spacy.load("pl_core_news_md"))
-    print("{}/{}".format(i, len(docs) - 1))
     for j, dy in enumerate(docs):
         if j > i:
             simt = (
                 dx["nlpt"].similarity(dy["nlpt"])
-                if len(dx["text"]) > TEXT_MIN_LENGHT
-                and len(dy["text"]) > TEXT_MIN_LENGHT
+                if len(dx["text"]) > TEXT_MIN_LENGHT and len(dy["text"]) > TEXT_MIN_LENGHT
                 else 0
             )
-            if simt > 0.7 and (dx["verdict"] == "false" or dx["verdict"] == "true"):
+            if simt > 0 and (dx["verdict"] == "false" or dx["verdict"] == "true"):
                 simc = (
                     dx["nlpc"].similarity(dy["nlpc"])
-                    if len(dx["comment"]) > TEXT_MIN_LENGHT
-                    and len(dy["comment"]) > TEXT_MIN_LENGHT
+                    if len(dx["comment"]) > TEXT_MIN_LENGHT and len(dy["comment"]) > TEXT_MIN_LENGHT
                     else 0
                 )
                 simt = simt if simt < 1 else 2
@@ -72,5 +74,6 @@ for i, dx in track(enumerate(docs), "Processing", len(docs)):
                     )
                 )
 
-print("Done. Total records: {}".format(len(similarities)))
 console.log(sorted(similarities, key=lambda x: x[2])[-500:])
+print("Done. Total records: {}".format(len(similarities)))
+print("Total: {} Text: {} Comment: {} T&C: {}".format(len(data), withText, withComment, withTextAndComment))
