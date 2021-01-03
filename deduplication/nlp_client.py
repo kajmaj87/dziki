@@ -1,5 +1,6 @@
 import http.client
 import json
+import argparse
 from glob import glob
 from rich.console import Console
 from rich.traceback import install
@@ -8,6 +9,10 @@ install(show_locals=True)
 
 console = Console()
 
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument("-l", "--limit", type=int, default=2000, help="Limit amount of texts sent to server")
+parser.add_argument("-s", "--show", type=int, default=200, help="Max amount of records to show")
+config = parser.parse_args()
 
 def loadDocuments():
     docs, data = [], []
@@ -36,12 +41,12 @@ def calculateScore(document):
 
 c = http.client.HTTPConnection("localhost", 8080)
 d = {
-    "documents": loadDocuments(),
+    "documents": loadDocuments()[:config.limit],
     "fields": [
         {"name": "text", "min_similarity": 0.9, "min_length": 10, "boost_exact_match": False},
-        {"name": "comment", "min_length": 10, "min_similarity": 0.9},
+        {"name": "comment", "min_similarity": 0.9, "min_length": 10},
     ],
 }
 c.request("POST", "/process", json.dumps(d))
 doc = json.loads(c.getresponse().read())
-console.log(sorted(doc["similarities"], key=lambda x: calculateScore(x))[-200:])
+console.log(sorted(doc["similarities"], key=lambda x: calculateScore(x))[-config.show:])
