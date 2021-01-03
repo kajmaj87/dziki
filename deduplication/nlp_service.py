@@ -5,6 +5,7 @@ import spacy
 import json
 from bottle import run, post, request, response
 from rich.progress import track
+from spacy.lang.pl.stop_words import STOP_WORDS
 
 TEXT_MIN_LENGHT = 10
 
@@ -21,7 +22,11 @@ def processDocuments(nlp, docs, fields):
     processedTexts = defaultdict(list)
     for i, d in track(enumerate(docs), "Preprocessing", len(docs)):
         for f in fields:
-            processedTexts[f["name"]].append(nlp(d[f["name"]]))
+            if "stop_word_removal" in f and f["stop_word_removal"]:
+                text = " ".join([w.lower() for w in d[f["name"]].split() if w not in STOP_WORDS])
+            else:
+                text = d[f["name"]]
+            processedTexts[f["name"]].append(nlp(text))
 
     print("Processing {} documents...".format(len(docs)))
     for i, dx in track(enumerate(docs), "Processing", len(docs)):

@@ -10,7 +10,7 @@ install(show_locals=True)
 console = Console()
 
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument("-l", "--limit", type=int, default=2000, help="Limit amount of texts sent to server")
+parser.add_argument("-l", "--limit", type=int, default=5000, help="Limit amount of texts sent to server")
 parser.add_argument("-s", "--show", type=int, default=200, help="Max amount of records to show")
 config = parser.parse_args()
 
@@ -43,7 +43,7 @@ c = http.client.HTTPConnection("localhost", 8080)
 d = {
     "documents": loadDocuments()[:config.limit],
     "fields": [
-        {"name": "text", "min_similarity": 0.9, "min_length": 10, "boost_exact_match": False},
+        {"name": "text", "min_similarity": 0.9, "min_length": 10, "boost_exact_match": True, "stop_word_removal": True},
         {"name": "comment", "min_similarity": 0.9, "min_length": 10},
     ],
 }
