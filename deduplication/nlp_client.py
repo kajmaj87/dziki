@@ -3,6 +3,7 @@ import json
 import argparse
 from glob import glob
 from rich.console import Console
+from rich import print
 from rich.traceback import install
 
 install(show_locals=True)
@@ -75,15 +76,20 @@ d = {
     "documents": loadDocuments()[:config.limit],
     "fields": [
         {"name": "text", "min_similarity": 0.9, "min_length": 10, "boost_exact_match": True, "stop_word_removal": True},
-        {"name": "comment", "min_similarity": 0.9, "min_length": 10},
+        {"name": "comment", "min_similarity": 0.9, "min_length": 10, "stop_word_removal": True},
     ],
 }
 c.request("POST", "/process", json.dumps(d))
 doc = json.loads(c.getresponse().read())
 similarities = doc["similarities"]
 if config.show>0:
-    console.log("[bold red] Showing {}/{} of best similarities found".format(min(config.show, len(similarities)), len(similarities)))
-    console.log(sorted(similarities, key=lambda x: calculateScore(x))[-config.show:])
+    if len(config.groups)>0:
+        without_groups = [s for s in similarities if not any([g in s["similarities"] and s["similarities"][g]>=1 for g in config.groups])]
+        print("[bold red] Showing {}/{} of best similarities found (perfect matches will be listed in groups later).".format(min(config.show, len(without_groups)), len(without_groups)))
+        print(sorted(without_groups, key=lambda x: calculateScore(x))[-config.show:])
+    else:
+        print("[bold red] Showing {}/{} of best similarities found".format(min(config.show, len(similarities)), len(similarities)))
+        print(sorted(similarities, key=lambda x: calculateScore(x))[-config.show:])
 for g in config.groups:
-    console.log("[bold red] Groups by {}".format(g))
-    console.log(sorted(createGroups(similarities, g), key=len))
+    print("[bold red] Groups by {}".format(g))
+    print(sorted(createGroups(similarities, g), key=len))
