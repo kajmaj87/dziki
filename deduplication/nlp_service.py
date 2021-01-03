@@ -34,12 +34,14 @@ def processDocuments(nlp, docs, fields):
                     boost = f["boost_exact_match"] if "boost_exact_match" in f else False
                     fieldName = f["name"]
 
-                    if len(dx[fieldName])>minLenght and len(dy[fieldName])>minLenght:
-                        similarity = processDocumentPair(processedTexts[fieldName][i], processedTexts[fieldName][j], boost)
+                    if len(dx[fieldName]) > minLenght and len(dy[fieldName]) > minLenght:
+                        similarity = processDocumentPair(
+                            processedTexts[fieldName][i], processedTexts[fieldName][j], boost
+                        )
                         if similarity is not None and similarity > minSimilarity:
                             document_similarities[fieldName] = similarity
-                if len(document_similarities)>0:
-                    similarities.append({ "similarities": document_similarities, "docs": [dx, dy]})
+                if len(document_similarities) > 0:
+                    similarities.append({"similarities": document_similarities, "docs": [dx, dy]})
     print("Done. Sending back {} records.".format(len(similarities)))
     return {"similarities": similarities}
 

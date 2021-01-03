@@ -26,14 +26,22 @@ def loadDocuments():
         )
     return docs
 
+
 def calculateScore(document):
     sim = document["similarities"]
     textScore = sim["text"] if "text" in sim else 0
     commentScore = sim["comment"] if "comment" in sim else 0
-    return textScore**2 + commentScore**2
+    return textScore ** 2 + commentScore ** 2
+
 
 c = http.client.HTTPConnection("localhost", 8080)
-d = {"documents": loadDocuments(), "fields": [{"name":"text", "min_similarity": 0.9, "min_length": 10, "boost_exact_match": False }, {"name":"comment", "min_length":10, "min_similarity": 0.9}]}
+d = {
+    "documents": loadDocuments(),
+    "fields": [
+        {"name": "text", "min_similarity": 0.9, "min_length": 10, "boost_exact_match": False},
+        {"name": "comment", "min_length": 10, "min_similarity": 0.9},
+    ],
+}
 c.request("POST", "/process", json.dumps(d))
 doc = json.loads(c.getresponse().read())
 console.log(sorted(doc["similarities"], key=lambda x: calculateScore(x))[-200:])
